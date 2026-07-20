@@ -15,7 +15,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -50,7 +50,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 📖 API Reference
+## API Reference
 
 ### Health Check
 
@@ -128,7 +128,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 🤖 Bot Integration Example (cURL)
+## Bot Integration Example (cURL)
 
 Verify numbers typed by users in chat widgets before storing in database or sending triggers:
 
