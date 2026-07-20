@@ -1,4 +1,4 @@
-# Phone Validator API 📞⚡
+# Phone Validator API
 
 A high-performance microservice to validate, format, and normalize international phone numbers using Google's **LibPhoneNumber** (max metadata dataset). 
 
@@ -6,7 +6,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Complete Global Validation**: Powered by `libphonenumber-js/max` supporting phone structures and types from all regions worldwide.
 * **Smart Calling Code Fallback**: Automatically recognizes and validates full international inputs missing the `+` prefix (e.g., converting `6581234567` automatically to Singapore `+65 8123 4567`).
