@@ -1,0 +1,107 @@
+openapi: 3.0.3
+info:
+  title: Phone Validator API
+  version: 1.0.0
+  description: >
+    Internal service used to validate phone numbers using Google LibPhoneNumber.  
+    Returns validity, format and normalized representations.
+
+servers:
+  - url: {{server_url}}
+    description: Production
+
+paths:
+  /validate:
+    post:
+      summary: Validate phone number via LibPhoneNumber
+      description: >
+        Receive a phone number and return:
+        - Syntax validation
+        - International prefix
+        - Type (mobile, landline, etc.)
+        - Normalized formats (E164, international, national, RFC3966)
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+              properties:
+                phone:
+                  type: string
+                  example: "+5548999999999"
+                  description: Complete number with DDI or national
+                country:
+                  type: string
+                  example: "BR"
+                  description: ISO-2 country code (optional)
+                raw:
+                  type: string
+                  example: "48999999999"
+                  description: Raw number typed by the user (optional)
+
+      responses:
+        "200":
+          description: Phone validation return
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  input:
+                    type: object
+                    properties:
+                      raw:
+                        type: string
+                      country:
+                        type: string
+                  parsed:
+                    type: object
+                    properties:
+                      isValid:
+                        type: boolean
+                      isPossible:
+                        type: boolean
+                      type:
+                        type: string
+                        example: MOBILE
+                      region:
+                        type: string
+                        example: BR
+                  formatted:
+                    type: object
+                    properties:
+                      e164:
+                        type: string
+                        example: "+5548999999999"
+                      international:
+                        type: string
+                        example: "+55 48 99999-9999"
+                      national:
+                        type: string
+                        example: "(48) 99999-9999"
+                      rfc3966:
+                        type: string
+                        example: "tel:+55-48-99999-9999"
+                      whatsapp:
+                        type: string
+                        example: "5548999999999"
+                      whatsappUrl:
+                        type: string
+                        example: "https://wa.me/5548999999999"
+        "400":
+          description: Validation error or invalid payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid or missing number"
+
+components:
+  securitySchemes: {}
