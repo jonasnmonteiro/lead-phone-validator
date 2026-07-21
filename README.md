@@ -1,4 +1,4 @@
-# Phone Validator API 📞⚡
+# Phone Validator API
 
 A high-performance microservice to validate, format, and normalize international phone numbers using Google's **LibPhoneNumber** (max metadata dataset). 
 
@@ -6,7 +6,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Complete Global Validation**: Powered by `libphonenumber-js/max` supporting phone structures and types from all regions worldwide.
 * **Full Phone Metadata**: Extends the validator to return offline carrier identification, geocoded geographic location, and timezone mappings.
@@ -16,7 +16,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -51,7 +51,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 📖 API Reference
+## API Reference
 
 ### Health Check
 
@@ -137,7 +137,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 
 ---
 
-## 🤖 Bot Integration Example (cURL)
+## Bot Integration Example (cURL)
 
 Verify numbers typed by users in chat widgets before storing in database or sending triggers:
 
