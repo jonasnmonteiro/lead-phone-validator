@@ -9,6 +9,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
 ## 🚀 Key Features
 
 * **Complete Global Validation**: Powered by `libphonenumber-js/max` supporting phone structures and types from all regions worldwide.
+* **Full Phone Metadata**: Extends the validator to return offline carrier identification, geocoded geographic location, and timezone mappings.
 * **Smart Calling Code Fallback**: Automatically recognizes and validates full international inputs missing the `+` prefix (e.g., converting `6581234567` automatically to Singapore `+65 8123 4567`).
 * **WhatsApp Normalization Ready**: Returns standard WhatsApp format identifiers (`whatsapp`) and direct click-to-chat links (`whatsappUrl` e.g., `https://wa.me/number`).
 * **Security & Footprint**: Light-weight, secure, and production-ready `Alpine` Docker container running as a non-root user.
@@ -96,6 +97,13 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
     "type": "MOBILE",
     "region": "SG"
   },
+  "metadata": {
+    "carrier": "Singtel",
+    "location": "Singapore",
+    "timezones": [
+      "Asia/Singapore"
+    ]
+  },
   "formatted": {
     "e164": "+6581234567",
     "international": "+65 8123 4567",
@@ -122,6 +130,7 @@ Specifically optimized for **chatbot integrations, CRM systems, and marketing au
     "needsDDD": true,
     "reason": "Brazilian number without area code."
   },
+  "metadata": null,
   "formatted": {}
 }
 ```

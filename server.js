@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { parsePhoneNumberFromString } from "libphonenumber-js/max";
+import { carrier, geocoder, timezones } from "libphonenumber-geo-carrier";
 
 const app = express();
 app.use(cors());
@@ -11,8 +12,31 @@ function cleanNumber(n) {
 }
 
 // Helper to format consistent responses
-function sendResponse(res, phone, countryInput, parsed, extra = {}) {
+async function sendResponse(res, phone, countryInput, parsed, extra = {}) {
   const isValid = parsed ? parsed.isValid() : false;
+  
+  let metadata = null;
+  if (parsed && isValid) {
+    try {
+      const [carrierName, locationName, tzList] = await Promise.all([
+        carrier(parsed),
+        geocoder(parsed),
+        timezones(parsed)
+      ]);
+      metadata = {
+        carrier: carrierName || null,
+        location: locationName || null,
+        timezones: tzList || []
+      };
+    } catch (e) {
+      metadata = {
+        carrier: null,
+        location: null,
+        timezones: []
+      };
+    }
+  }
+
   return res.json({
     input: {
       raw: phone,
@@ -25,6 +49,7 @@ function sendResponse(res, phone, countryInput, parsed, extra = {}) {
       region: parsed ? (parsed.country || null) : null,
       ...extra
     },
+    metadata,
     formatted: (parsed && isValid) ? {
       e164: parsed.format('E.164') || null,
       international: parsed.format('INTERNATIONAL') || null,
@@ -36,7 +61,7 @@ function sendResponse(res, phone, countryInput, parsed, extra = {}) {
   });
 }
 
-app.post("/validate", (req, res) => {
+app.post("/validate", async (req, res) => {
   const { phone, country } = req.body;
 
   if (!phone) {
@@ -52,7 +77,7 @@ app.post("/validate", (req, res) => {
     if (country) {
       const parsed = parsePhoneNumberFromString(phone, country.toUpperCase());
       if (parsed?.isValid()) {
-        return sendResponse(res, phone, country, parsed);
+        return await sendResponse(res, phone, country, parsed);
       }
     }
 
@@ -60,7 +85,7 @@ app.post("/validate", (req, res) => {
     if (!phone.trim().startsWith("+")) {
       const parsed = parsePhoneNumberFromString("+" + raw);
       if (parsed?.isValid()) {
-        return sendResponse(res, phone, country, parsed);
+        return await sendResponse(res, phone, country, parsed);
       }
     }
 
@@ -68,14 +93,14 @@ app.post("/validate", (req, res) => {
     if (phone.trim().startsWith("+")) {
       const parsed = parsePhoneNumberFromString(phone);
       if (parsed?.isValid()) {
-        return sendResponse(res, phone, country, parsed);
+        return await sendResponse(res, phone, country, parsed);
       }
-      return sendResponse(res, phone, country, null, { reason: "Invalid number." });
+      return await sendResponse(res, phone, country, null, { reason: "Invalid number." });
     }
 
     // 2) Numbers with 8–9 digits → Brazil without DDD → ask for DDD
     if (raw.length === 8 || raw.length === 9) {
-      return sendResponse(res, phone, country, null, {
+      return await sendResponse(res, phone, country, null, {
         needsDDD: true,
         reason: "Brazilian number without area code."
       });
@@ -85,10 +110,10 @@ app.post("/validate", (req, res) => {
     if (raw.length === 10) {
       const parsed = parsePhoneNumberFromString(phone, "US");
       if (parsed?.isValid()) {
-        return sendResponse(res, phone, country, parsed);
+        return await sendResponse(res, phone, country, parsed);
       }
 
-      return sendResponse(res, phone, country, null, {
+      return await sendResponse(res, phone, country, null, {
         needsCountry: true,
         reason: "10-digit number does not clearly correspond to a country."
       });
@@ -98,10 +123,10 @@ app.post("/validate", (req, res) => {
     if (raw.startsWith("55")) {
       const parsed = parsePhoneNumberFromString("+" + raw);
       if (parsed?.isValid()) {
-        return sendResponse(res, phone, country, parsed);
+        return await sendResponse(res, phone, country, parsed);
       }
 
-      return sendResponse(res, phone, country, null, {
+      return await sendResponse(res, phone, country, null, {
         reason: "Number starting with 55, but invalid. Missing area code?"
       });
     }
@@ -110,10 +135,10 @@ app.post("/validate", (req, res) => {
     if (raw.length === 11) {
       const parsed = parsePhoneNumberFromString(raw, "BR");
       if (parsed?.isValid()) {
-        return sendResponse(res, phone, country, parsed);
+        return await sendResponse(res, phone, country, parsed);
       }
 
-      return sendResponse(res, phone, country, null, {
+      return await sendResponse(res, phone, country, null, {
         needsDDD: true,
         reason: "Invalid 11-digit format for BR."
       });
@@ -123,14 +148,14 @@ app.post("/validate", (req, res) => {
     if (raw.length >= 12) {
       const parsed = parsePhoneNumberFromString("+" + raw);
       if (parsed?.isValid()) {
-        return sendResponse(res, phone, country, parsed);
+        return await sendResponse(res, phone, country, parsed);
       }
 
-      return sendResponse(res, phone, country, null, { reason: "Invalid international number." });
+      return await sendResponse(res, phone, country, null, { reason: "Invalid international number." });
     }
 
     // 7) fallback → invalid number
-    return sendResponse(res, phone, country, null, { reason: "Invalid number." });
+    return await sendResponse(res, phone, country, null, { reason: "Invalid number." });
 
   } catch (error) {
     return res.status(500).json({

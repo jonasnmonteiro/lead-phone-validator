@@ -7,8 +7,9 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "libphonenumber-js": "^1.10.22",
-    "cors": "^2.8.5"
+    "libphonenumber-geo-carrier": "^2.0.0",
+    "libphonenumber-js": "^1.10.22"
   }
 }

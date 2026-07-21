@@ -71,6 +71,23 @@ paths:
                       region:
                         type: string
                         example: BR
+                  metadata:
+                    type: object
+                    nullable: true
+                    properties:
+                      carrier:
+                        type: string
+                        example: "Vivo"
+                        nullable: true
+                      location:
+                        type: string
+                        example: "São Paulo"
+                        nullable: true
+                      timezones:
+                        type: array
+                        items:
+                          type: string
+                        example: ["America/Sao_Paulo"]
                   formatted:
                     type: object
                     properties:
