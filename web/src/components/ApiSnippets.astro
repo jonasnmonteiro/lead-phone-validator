@@ -1,0 +1,155 @@
+---
+---
+
+<section id="api-docs" class="section">
+  <div class="section-header">
+    <span class="badge badge-neutral">Developer Integration</span>
+    <h2 class="section-title">Ready for Your Stack</h2>
+    <p class="section-desc">Integrate phone validation into your CRM, webhooks, chatbot workflows, or backend pipelines in minutes.</p>
+  </div>
+
+  <div class="snippets-card glass-panel">
+    <div class="snippet-tabs">
+      <button type="button" class="tab-btn active" data-lang="curl">cURL</button>
+      <button type="button" class="tab-btn" data-lang="python">Python</button>
+      <button type="button" class="tab-btn" data-lang="nodejs">Node.js</button>
+      <button type="button" class="tab-btn" data-lang="go">Go</button>
+    </div>
+
+    <div class="code-container">
+      <pre id="code-curl" class="code-block active"><code>curl -X POST "http://localhost:3007/v1/validate" \
+  -H "Content-Type: application/json" \
+  -d '&#123;
+    "phone": "+55 (11) 98765-4321"
+  &#125;'</code></pre>
+
+      <pre id="code-python" class="code-block"><code>import requests
+
+res = requests.post(
+    "http://localhost:3007/v1/validate",
+    json=&#123;"phone": "+5511987654321"&#125;
+)
+data = res.json()
+if data["parsed"]["isValid"]:
+    print("WhatsApp Link:", data["formatted"]["whatsappUrl"])
+    print("Carrier:", data["metadata"]["carrier"])</code></pre>
+
+      <pre id="code-nodejs" class="code-block"><code>const res = await fetch("http://localhost:3007/v1/validate", &#123;
+  method: "POST",
+  headers: &#123; "Content-Type": "application/json" &#125;,
+  body: JSON.stringify(&#123; phone: "+5511987654321" &#125;)
+&#125;);
+const data = await res.json();
+console.log(data.formatted.whatsappUrl);</code></pre>
+
+      <pre id="code-go" class="code-block"><code>package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+)
+
+func main() &#123;
+    payload, _ := json.Marshal(map[string]string&#123;
+        "phone": "+5511987654321",
+    &#125;)
+    resp, _ := http.Post("http://localhost:3007/v1/validate", "application/json", bytes.NewBuffer(payload))
+    defer resp.Body.Close()
+&#125;</code></pre>
+    </div>
+  </div>
+</section>
+
+<script>
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const codeBlocks = document.querySelectorAll(".code-block");
+
+  tabBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabBtns.forEach(b => b.classList.remove("active"));
+      codeBlocks.forEach(c => c.classList.remove("active"));
+
+      btn.classList.add("active");
+      const lang = (btn as HTMLElement).dataset.lang;
+      const targetBlock = document.getElementById(`code-${lang}`);
+      if (targetBlock) {
+        targetBlock.classList.add("active");
+      }
+    });
+  });
+</script>
+
+<style>
+  .section {
+    padding: 32px 0 64px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .snippets-card {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .snippet-tabs {
+    display: flex;
+    background: var(--bg-surface-elevated);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 12px;
+  }
+
+  .tab-btn {
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+  }
+
+  .tab-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .tab-btn.active {
+    color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
+  }
+
+  .code-container {
+    padding: 20px 24px;
+    background: #0F172A;
+  }
+
+  .code-block {
+    display: none;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: #F8FAFC;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+
+  .code-block.active {
+    display: block;
+  }
+</style>

@@ -1,0 +1,414 @@
+---
+---
+
+<section id="batch-validator" class="section">
+  <div class="section-header">
+    <span class="badge badge-neutral">High Throughput</span>
+    <h2 class="section-title">Concurrent Batch Validation</h2>
+    <p class="section-desc">Validate up to 10,000 leads concurrently with native Go worker routines for marketing pipelines.</p>
+  </div>
+
+  <div class="batch-card glass-panel">
+    <div class="batch-input-area">
+      <div class="batch-header">
+        <label for="batch-textarea" class="batch-label">Paste Numbers (one per line)</label>
+        <span class="batch-hint">Supports raw, formatted, local, and international numbers</span>
+      </div>
+      <textarea
+        id="batch-textarea"
+        class="batch-textarea"
+        rows="6"
+        placeholder="+5511987654321&#10;6581234567&#10;2025550125&#10;987654321&#10;+442071838750"
+      >+55 (11) 98765-4321
+6581234567
+2025550125
+987654321
++44 20 7183 8750</textarea>
+
+      <div class="batch-controls">
+        <button type="button" id="run-batch-btn" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Run Batch Validation
+        </button>
+        <button type="button" id="export-csv-btn" class="btn-secondary" style="display: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Clean CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="batch-results-area" id="batch-results-area" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-num" id="stat-total">0</span>
+          <span class="stat-label">Total Leads</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num stat-success" id="stat-valid">0</span>
+          <span class="stat-label">Valid Numbers</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num stat-danger" id="stat-invalid">0</span>
+          <span class="stat-label">Invalid / Incomplete</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num stat-brand" id="stat-rate">0%</span>
+          <span class="stat-label">Quality Rate</span>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="batch-table">
+          <thead>
+            <tr>
+              <th>Input</th>
+              <th>Status</th>
+              <th>Type / Region</th>
+              <th>Carrier</th>
+              <th>Location</th>
+              <th>E.164 Format</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="batch-table-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const batchTextarea = document.getElementById("batch-textarea") as HTMLTextAreaElement;
+  const runBatchBtn = document.getElementById("run-batch-btn") as HTMLButtonElement;
+  const exportCsvBtn = document.getElementById("export-csv-btn") as HTMLButtonElement;
+  const batchResultsArea = document.getElementById("batch-results-area") as HTMLElement;
+
+  const statTotal = document.getElementById("stat-total") as HTMLElement;
+  const statValid = document.getElementById("stat-valid") as HTMLElement;
+  const statInvalid = document.getElementById("stat-invalid") as HTMLElement;
+  const statRate = document.getElementById("stat-rate") as HTMLElement;
+  const tableBody = document.getElementById("batch-table-body") as HTMLElement;
+
+  let currentBatchResults: any[] = [];
+
+  async function executeBatch() {
+    const text = batchTextarea.value.trim();
+    if (!text) return;
+
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return;
+
+    runBatchBtn.disabled = true;
+    runBatchBtn.textContent = "Processing...";
+
+    const payload = {
+      phones: lines.map(p => ({ phone: p }))
+    };
+
+    try {
+      const res = await fetch("/v1/validate/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      currentBatchResults = data.results || [];
+      renderBatchResults(data);
+    } catch (err) {
+      alert("Error communicating with validation API.");
+    } finally {
+      runBatchBtn.disabled = false;
+      runBatchBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        Run Batch Validation
+      `;
+    }
+  }
+
+  function renderBatchResults(data: any) {
+    const total = data.total || 0;
+    const valid = data.valid || 0;
+    const invalid = data.invalid || 0;
+    const rate = total > 0 ? Math.round((valid / total) * 100) : 0;
+
+    statTotal.textContent = String(total);
+    statValid.textContent = String(valid);
+    statInvalid.textContent = String(invalid);
+    statRate.textContent = `${rate}%`;
+
+    tableBody.innerHTML = "";
+
+    const results = data.results || [];
+    results.forEach((r: any) => {
+      const tr = document.createElement("tr");
+
+      const inputPhone = r.input?.raw || "";
+      const isValid = r.parsed?.isValid || false;
+      const needsDDD = r.parsed?.needsDDD || false;
+      const type = r.parsed?.type || "UNKNOWN";
+      const region = r.parsed?.region || "N/A";
+      const carrier = r.metadata?.carrier || "N/A";
+      const location = r.metadata?.location || "N/A";
+      const e164 = r.formatted?.e164 || "N/A";
+      const waUrl = r.formatted?.whatsappUrl || "";
+
+      let statusBadgeHtml = `<span class="badge badge-invalid">Invalid</span>`;
+      if (isValid) {
+        statusBadgeHtml = `<span class="badge badge-valid">Valid</span>`;
+      } else if (needsDDD) {
+        statusBadgeHtml = `<span class="badge badge-warning">Missing DDD</span>`;
+      }
+
+      let actionHtml = `<span style="color: var(--text-muted); font-size: 13px;">-</span>`;
+      if (isValid && waUrl) {
+        actionHtml = `
+          <a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="table-wa-link">
+            WhatsApp
+          </a>
+        `;
+      }
+
+      tr.innerHTML = `
+        <td class="font-mono">${inputPhone}</td>
+        <td>${statusBadgeHtml}</td>
+        <td><span class="type-cell">${type} (${region})</span></td>
+        <td>${carrier}</td>
+        <td>${location}</td>
+        <td class="font-mono">${e164}</td>
+        <td>${actionHtml}</td>
+      `;
+
+      tableBody.appendChild(tr);
+    });
+
+    batchResultsArea.style.display = "block";
+    exportCsvBtn.style.display = "inline-flex";
+  }
+
+  function exportCSV() {
+    if (!currentBatchResults.length) return;
+
+    const headers = ["Raw Input", "Is Valid", "Type", "Region", "Carrier", "Location", "Timezone", "E164", "WhatsApp Link"];
+    const rows = currentBatchResults.map(r => [
+      `"${(r.input?.raw || "").replace(/"/g, '""')}"`,
+      r.parsed?.isValid ? "true" : "false",
+      r.parsed?.type || "",
+      r.parsed?.region || "",
+      `"${(r.metadata?.carrier || "").replace(/"/g, '""')}"`,
+      `"${(r.metadata?.location || "").replace(/"/g, '""')}"`,
+      `"${(r.metadata?.timezones?.join("; ") || "").replace(/"/g, '""')}"`,
+      r.formatted?.e164 || "",
+      r.formatted?.whatsappUrl || ""
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `leadphone-validation-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  runBatchBtn.addEventListener("click", executeBatch);
+  exportCsvBtn.addEventListener("click", exportCSV);
+</script>
+
+<style>
+  .section {
+    padding: 32px 0 48px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .batch-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .batch-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .batch-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .batch-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .batch-textarea {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    outline: none;
+    resize: vertical;
+    transition: all 0.15s ease;
+  }
+
+  .batch-textarea:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    background: var(--bg-surface);
+  }
+
+  .batch-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 768px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .stat-card {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stat-num {
+    font-size: 26px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+  }
+
+  .stat-success {
+    color: var(--color-success);
+  }
+
+  .stat-danger {
+    color: var(--color-danger);
+  }
+
+  .stat-brand {
+    color: var(--brand-primary);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+  }
+
+  .batch-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  .batch-table th {
+    background: var(--bg-surface-elevated);
+    padding: 12px 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+    white-space: nowrap;
+  }
+
+  .batch-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  .batch-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .type-cell {
+    font-weight: 500;
+  }
+
+  .table-wa-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-whatsapp);
+    padding: 4px 8px;
+    background: color-mix(in srgb, var(--color-whatsapp) 10%, transparent);
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+  }
+
+  .table-wa-link:hover {
+    background: var(--color-whatsapp);
+    color: #FFFFFF;
+  }
+</style>

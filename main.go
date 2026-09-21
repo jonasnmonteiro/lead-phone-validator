@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -35,19 +36,34 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			handlers.HandleHealth(w, r)
-			return
-		}
-		http.NotFound(w, r)
-	})
-
 	mux.HandleFunc("/health", handlers.HandleHealth)
+	mux.HandleFunc("/v1/health", handlers.HandleHealth)
 	mux.HandleFunc("/validate", handlers.HandleValidate)
 	mux.HandleFunc("/v1/validate", handlers.HandleValidate)
 	mux.HandleFunc("/validate/batch", handlers.HandleBatchValidate)
 	mux.HandleFunc("/v1/validate/batch", handlers.HandleBatchValidate)
+
+	mux.HandleFunc("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "openapi.yaml")
+	})
+
+	mux.HandleFunc("/documentation.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "documentation.yaml")
+	})
+
+	webDist := filepath.Join("web", "dist")
+	if info, err := os.Stat(webDist); err == nil && info.IsDir() {
+		fs := http.FileServer(http.Dir(webDist))
+		mux.Handle("/", fs)
+	} else {
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				handlers.HandleHealth(w, r)
+				return
+			}
+			http.NotFound(w, r)
+		})
+	}
 
 	server := &http.Server{
 		Addr:         ":" + port,

@@ -1,0 +1,73 @@
+---
+---
+
+<footer class="footer">
+  <div class="container footer-content">
+    <div class="footer-brand">
+      <span class="footer-title">LeadPhone Validator Studio</span>
+      <span class="footer-copy">Telecom intelligence, carrier lookup, and lead normalization microservice written in Go.</span>
+    </div>
+
+    <div class="footer-links">
+      <a href="/openapi.yaml" target="_blank" class="footer-link">OpenAPI 3.0.3</a>
+      <a href="/health" target="_blank" class="footer-link">API Health Status</a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    padding: 32px 0;
+    margin-top: 48px;
+  }
+
+  .footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .footer-content {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .footer-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .footer-copy {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .footer-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .footer-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color 0.15s ease;
+  }
+
+  .footer-link:hover {
+    color: var(--brand-primary);
+  }
+</style>

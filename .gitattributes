@@ -1,0 +1,8 @@
+web/** linguist-vendored
+dist/** linguist-vendored
+node_modules/** linguist-vendored
+package-lock.json linguist-vendored
+estudos/** linguist-documentation
+docs/** linguist-documentation
+*.md linguist-documentation
+*.yaml linguist-documentation

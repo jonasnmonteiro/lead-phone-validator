@@ -1,19 +1,26 @@
 APP_NAME=leadphone-validator
 PORT?=3007
 
-.PHONY: build run test clean docker-build docker-run
+.PHONY: build run test clean docker-build docker-run web-build web-dev
 
-build:
+web-build:
+	cd web && npm install && npm run build
+
+web-dev:
+	cd web && npm run dev
+
+build: web-build
 	go build -ldflags="-w -s" -o bin/$(APP_NAME) .
 
-run: build
+run:
+	go build -ldflags="-w -s" -o bin/$(APP_NAME) .
 	./bin/$(APP_NAME)
 
 test:
 	go test -v ./...
 
 clean:
-	rm -rf bin/
+	rm -rf bin/ web/dist/ web/node_modules/
 
 docker-build:
 	docker build -t $(APP_NAME):latest .

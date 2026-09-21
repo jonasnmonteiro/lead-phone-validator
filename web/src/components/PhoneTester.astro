@@ -1,0 +1,607 @@
+---
+---
+
+<section id="single-validator" class="section">
+  <div class="section-header">
+    <span class="badge badge-neutral">Interactive Playground</span>
+    <h2 class="section-title">Single Lead Phone Validation</h2>
+    <p class="section-desc">Parse, sanitize, and verify international numbers in real time with telecom metadata extraction.</p>
+  </div>
+
+  <div class="tester-grid">
+    <div class="glass-panel input-card">
+      <form id="phone-form" class="form-container">
+        <div class="form-group">
+          <label for="phone-input" class="form-label">Phone Number</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <input
+              type="text"
+              id="phone-input"
+              class="text-input"
+              placeholder="+55 (11) 98765-4321 or 6581234567"
+              value="+55 (11) 98765-4321"
+              autocomplete="tel"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="country-select" class="form-label">Country Hint (Optional)</label>
+          <select id="country-select" class="select-input">
+            <option value="">Auto-detect International Prefix</option>
+            <option value="BR">Brazil (BR)</option>
+            <option value="US">United States / Canada (US)</option>
+            <option value="SG">Singapore (SG)</option>
+            <option value="GB">United Kingdom (GB)</option>
+            <option value="PT">Portugal (PT)</option>
+            <option value="ES">Spain (ES)</option>
+            <option value="DE">Germany (DE)</option>
+            <option value="FR">France (FR)</option>
+            <option value="IT">Italy (IT)</option>
+            <option value="MX">Mexico (MX)</option>
+            <option value="AR">Argentina (AR)</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="validate-btn" class="btn-primary" style="width: 100%;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Validate Phone
+          </button>
+        </div>
+
+        <div class="quick-examples">
+          <span class="quick-label">Try Examples:</span>
+          <div class="example-chips">
+            <button type="button" class="example-chip" data-phone="+55 (11) 98765-4321" data-country="BR">BR Mobile</button>
+            <button type="button" class="example-chip" data-phone="6581234567" data-country="">SG (No +)</button>
+            <button type="button" class="example-chip" data-phone="2025550125" data-country="US">US Toll/Direct</button>
+            <button type="button" class="example-chip" data-phone="987654321" data-country="">BR (No DDD)</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="glass-panel result-card" id="result-card">
+      <div class="result-header">
+        <div class="status-wrapper">
+          <span id="status-badge" class="badge badge-valid">Valid Number</span>
+          <span id="type-badge" class="badge badge-neutral">MOBILE</span>
+        </div>
+        <span id="region-badge" class="badge badge-neutral">Region: BR (+55)</span>
+      </div>
+
+      <div class="result-body">
+        <div class="whatsapp-box" id="whatsapp-box">
+          <div class="whatsapp-info">
+            <span class="whatsapp-title">WhatsApp Direct Routing</span>
+            <span class="whatsapp-url" id="wa-link-text">https://wa.me/5511987654321</span>
+          </div>
+          <a id="wa-btn" href="https://wa.me/5511987654321" target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.97.53 1.771.815 2.796.815 3.18 0 5.767-2.587 5.768-5.766.001-3.181-2.585-5.766-5.768-5.766zm9.969 5.766c0 5.518-4.482 10-10 10-1.748 0-3.385-.45-4.819-1.238l-5.181 1.358 1.382-5.048c-.867-1.482-1.382-3.21-1.382-5.072 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/>
+            </svg>
+            Open Chat
+          </a>
+        </div>
+
+        <div class="metadata-grid">
+          <div class="meta-item">
+            <span class="meta-label">Carrier</span>
+            <span class="meta-value" id="meta-carrier">TIM</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Location</span>
+            <span class="meta-value" id="meta-location">São Paulo</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Timezone</span>
+            <span class="meta-value" id="meta-timezone">America/Sao_Paulo</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">National Number</span>
+            <span class="meta-value" id="meta-national-num">11987654321</span>
+          </div>
+        </div>
+
+        <div class="formats-list">
+          <div class="format-row">
+            <span class="format-name">E.164</span>
+            <span class="format-val" id="fmt-e164">+5511987654321</span>
+            <button type="button" class="copy-btn" data-target="fmt-e164">Copy</button>
+          </div>
+          <div class="format-row">
+            <span class="format-name">International</span>
+            <span class="format-val" id="fmt-intl">+55 11 98765-4321</span>
+            <button type="button" class="copy-btn" data-target="fmt-intl">Copy</button>
+          </div>
+          <div class="format-row">
+            <span class="format-name">National</span>
+            <span class="format-val" id="fmt-nat">(11) 98765-4321</span>
+            <button type="button" class="copy-btn" data-target="fmt-nat">Copy</button>
+          </div>
+          <div class="format-row">
+            <span class="format-name">RFC 3966</span>
+            <span class="format-val" id="fmt-rfc">tel:+55-11-98765-4321</span>
+            <button type="button" class="copy-btn" data-target="fmt-rfc">Copy</button>
+          </div>
+        </div>
+
+        <div id="error-message-box" class="error-box" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span id="error-reason-text">Invalid number format.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const form = document.getElementById("phone-form") as HTMLFormElement;
+  const phoneInput = document.getElementById("phone-input") as HTMLInputElement;
+  const countrySelect = document.getElementById("country-select") as HTMLSelectElement;
+  const validateBtn = document.getElementById("validate-btn") as HTMLButtonElement;
+
+  const statusBadge = document.getElementById("status-badge") as HTMLElement;
+  const typeBadge = document.getElementById("type-badge") as HTMLElement;
+  const regionBadge = document.getElementById("region-badge") as HTMLElement;
+  const whatsappBox = document.getElementById("whatsapp-box") as HTMLElement;
+  const waLinkText = document.getElementById("wa-link-text") as HTMLElement;
+  const waBtn = document.getElementById("wa-btn") as HTMLAnchorElement;
+
+  const metaCarrier = document.getElementById("meta-carrier") as HTMLElement;
+  const metaLocation = document.getElementById("meta-location") as HTMLElement;
+  const metaTimezone = document.getElementById("meta-timezone") as HTMLElement;
+  const metaNationalNum = document.getElementById("meta-national-num") as HTMLElement;
+
+  const fmtE164 = document.getElementById("fmt-e164") as HTMLElement;
+  const fmtIntl = document.getElementById("fmt-intl") as HTMLElement;
+  const fmtNat = document.getElementById("fmt-nat") as HTMLElement;
+  const fmtRfc = document.getElementById("fmt-rfc") as HTMLElement;
+
+  const errorBox = document.getElementById("error-message-box") as HTMLElement;
+  const errorReasonText = document.getElementById("error-reason-text") as HTMLElement;
+
+  async function executeValidation() {
+    const phone = phoneInput.value.trim();
+    const country = countrySelect.value.trim();
+
+    if (!phone) return;
+
+    validateBtn.disabled = true;
+    validateBtn.textContent = "Validating...";
+
+    try {
+      const res = await fetch("/v1/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, country: country || undefined })
+      });
+
+      const data = await res.json();
+      renderResponse(data);
+    } catch (err) {
+      statusBadge.className = "badge badge-invalid";
+      statusBadge.textContent = "Network Error";
+      errorBox.style.display = "flex";
+      errorReasonText.textContent = "Could not connect to API server.";
+    } finally {
+      validateBtn.disabled = false;
+      validateBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        Validate Phone
+      `;
+    }
+  }
+
+  function renderResponse(data: any) {
+    const parsed = data.parsed || {};
+    const metadata = data.metadata || {};
+    const formatted = data.formatted || {};
+
+    if (parsed.isValid) {
+      statusBadge.className = "badge badge-valid";
+      statusBadge.textContent = "Valid Number";
+      typeBadge.style.display = "inline-flex";
+      typeBadge.textContent = parsed.type || "UNKNOWN";
+      regionBadge.textContent = `Region: ${parsed.region || "Global"} (+${parsed.countryCode || ""})`;
+
+      whatsappBox.style.display = "flex";
+      waLinkText.textContent = formatted.whatsappUrl || "";
+      waBtn.href = formatted.whatsappUrl || "#";
+
+      metaCarrier.textContent = metadata.carrier || "Not specified";
+      metaLocation.textContent = metadata.location || "Global territory";
+      metaTimezone.textContent = (metadata.timezones && metadata.timezones.length > 0) ? metadata.timezones.join(", ") : "UTC";
+      metaNationalNum.textContent = parsed.nationalNumber ? String(parsed.nationalNumber) : "N/A";
+
+      fmtE164.textContent = formatted.e164 || "N/A";
+      fmtIntl.textContent = formatted.international || "N/A";
+      fmtNat.textContent = formatted.national || "N/A";
+      fmtRfc.textContent = formatted.rfc3966 || "N/A";
+
+      errorBox.style.display = "none";
+    } else {
+      if (parsed.needsDDD) {
+        statusBadge.className = "badge badge-warning";
+        statusBadge.textContent = "Missing Area Code (DDD)";
+      } else if (parsed.needsCountry) {
+        statusBadge.className = "badge badge-warning";
+        statusBadge.textContent = "Missing Country Code";
+      } else {
+        statusBadge.className = "badge badge-invalid";
+        statusBadge.textContent = "Invalid Number";
+      }
+
+      typeBadge.style.display = "none";
+      regionBadge.textContent = "Unresolved Region";
+      whatsappBox.style.display = "none";
+
+      metaCarrier.textContent = "None";
+      metaLocation.textContent = "None";
+      metaTimezone.textContent = "None";
+      metaNationalNum.textContent = "None";
+
+      fmtE164.textContent = "N/A";
+      fmtIntl.textContent = "N/A";
+      fmtNat.textContent = "N/A";
+      fmtRfc.textContent = "N/A";
+
+      errorBox.style.display = "flex";
+      errorReasonText.textContent = parsed.reason || "The phone number format could not be verified.";
+    }
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    executeValidation();
+  });
+
+  document.querySelectorAll(".example-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const btn = chip as HTMLButtonElement;
+      phoneInput.value = btn.dataset.phone || "";
+      countrySelect.value = btn.dataset.country || "";
+      executeValidation();
+    });
+  });
+
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = (btn as HTMLElement).dataset.target;
+      if (!targetId) return;
+      const targetEl = document.getElementById(targetId);
+      if (targetEl && targetEl.textContent) {
+        navigator.clipboard.writeText(targetEl.textContent);
+        const original = btn.textContent;
+        btn.textContent = "Copied!";
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1500);
+      }
+    });
+  });
+
+  executeValidation();
+</script>
+
+<style>
+  .section {
+    padding: 32px 0 48px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .tester-grid {
+    display: grid;
+    grid-template-columns: 440px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 960px) {
+    .tester-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .input-card {
+    padding: 24px;
+  }
+
+  .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .text-input {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px 12px 42px;
+    font-size: 15px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    outline: none;
+    transition: all 0.15s ease;
+  }
+
+  .text-input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    background: var(--bg-surface);
+  }
+
+  .select-input {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .select-input:focus {
+    border-color: var(--brand-primary);
+  }
+
+  .quick-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .quick-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .example-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .example-chip {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+  }
+
+  .example-chip:hover {
+    color: var(--text-primary);
+    border-color: var(--brand-primary);
+    background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+  }
+
+  .result-card {
+    padding: 24px;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .status-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .result-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  .whatsapp-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    background: color-mix(in srgb, var(--color-whatsapp) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-whatsapp) 25%, transparent);
+    border-radius: var(--radius-md);
+  }
+
+  .whatsapp-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .whatsapp-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0F5132;
+  }
+
+  .whatsapp-url {
+    font-size: 14px;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .metadata-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .meta-item {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .meta-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .meta-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .formats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .format-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .format-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 90px;
+  }
+
+  .format-val {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-primary);
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .copy-btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+  }
+
+  .copy-btn:hover {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+  }
+
+  .error-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+    border-radius: var(--radius-md);
+    color: var(--color-danger);
+    font-size: 14px;
+    font-weight: 500;
+  }
+</style>
