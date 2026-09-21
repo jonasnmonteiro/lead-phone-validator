@@ -1,16 +1,29 @@
-FROM node:22-alpine
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-COPY --chown=node:node package*.json ./
+RUN apk add --no-cache git ca-certificates tzdata
 
-RUN npm install --production
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY --chown=node:node . .
+COPY . .
 
-USER node
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/leadphone-validator .
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata && \
+    addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /app/leadphone-validator /app/leadphone-validator
+
+USER appuser
 
 EXPOSE 3007
 
-CMD ["node", "server.js"]
+ENV PORT=3007
 
+ENTRYPOINT ["/app/leadphone-validator"]
