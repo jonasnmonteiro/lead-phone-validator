@@ -1,0 +1,290 @@
+---
+---
+
+<section id="tools-section" class="section">
+  <div class="section-header">
+    <span class="badge badge-neutral">Telecom Hygiene</span>
+    <h2 class="section-title">Brazilian 9th Digit & Pattern Diagnostics</h2>
+    <p class="section-desc">Automate 8 to 9-digit legacy mobile normalization and detect synthetic dummy leads in real time.</p>
+  </div>
+
+  <div class="tools-grid">
+    <div class="glass-panel tool-card">
+      <div class="tool-header">
+        <span class="badge badge-neutral">BR Normalizer</span>
+        <h3 class="tool-title">9th Digit Auto-Fixer</h3>
+        <p class="tool-desc">Converts legacy 8-digit mobile numbers into modern 9-digit format while preserving 8-digit landlines.</p>
+      </div>
+
+      <div class="tool-form">
+        <div class="form-group">
+          <label for="ninth-input" class="form-label">Brazilian Phone Input</label>
+          <input
+            type="text"
+            id="ninth-input"
+            class="text-input"
+            placeholder="1187654321 or 87654321"
+            value="1187654321"
+          />
+        </div>
+        <button type="button" id="ninth-btn" class="btn-primary" style="width: 100%;">
+          Sanitize & Fix 9th Digit
+        </button>
+      </div>
+
+      <div class="tool-result-box" id="ninth-result-box">
+        <div class="result-row">
+          <span class="row-label">Original:</span>
+          <span class="row-val font-mono" id="ninth-res-orig">1187654321</span>
+        </div>
+        <div class="result-row">
+          <span class="row-label">Normalized:</span>
+          <span class="row-val font-mono" id="ninth-res-norm" style="color: var(--brand-primary); font-weight: 700;">11987654321</span>
+        </div>
+        <div class="result-row">
+          <span class="row-label">Diagnosis:</span>
+          <span class="row-val" id="ninth-res-msg">Inserted ninth digit 9 after area code.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-panel tool-card">
+      <div class="tool-header">
+        <span class="badge badge-neutral">Fraud & Quality Check</span>
+        <h3 class="tool-title">Dummy Pattern Detector</h3>
+        <p class="tool-desc">Inspects numbers for synthetic digit distribution, sequential ranges, and fictitious test numbers.</p>
+      </div>
+
+      <div class="tool-form">
+        <div class="form-group">
+          <label for="pattern-input" class="form-label">Phone to Inspect</label>
+          <input
+            type="text"
+            id="pattern-input"
+            class="text-input"
+            placeholder="11999999999 or 2025550199"
+            value="11999999999"
+          />
+        </div>
+        <button type="button" id="pattern-btn" class="btn-primary" style="width: 100%;">
+          Analyze Pattern Risk
+        </button>
+      </div>
+
+      <div class="tool-result-box" id="pattern-result-box">
+        <div class="result-row">
+          <span class="row-label">Risk Level:</span>
+          <span id="pattern-risk-badge" class="badge badge-invalid">Suspicious (Score: 90)</span>
+        </div>
+        <div class="result-row">
+          <span class="row-label">Flags:</span>
+          <span class="row-val" id="pattern-flags-text">ALL_IDENTICAL_DIGITS</span>
+        </div>
+        <div class="result-row">
+          <span class="row-label">Analysis:</span>
+          <span class="row-val" id="pattern-desc-text">High probability of dummy, test, or invalid sequence pattern.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const ninthInput = document.getElementById("ninth-input") as HTMLInputElement;
+  const ninthBtn = document.getElementById("ninth-btn") as HTMLButtonElement;
+  const ninthResOrig = document.getElementById("ninth-res-orig") as HTMLElement;
+  const ninthResNorm = document.getElementById("ninth-res-norm") as HTMLElement;
+  const ninthResMsg = document.getElementById("ninth-res-msg") as HTMLElement;
+
+  async function executeNinthFix() {
+    const phone = ninthInput.value.trim();
+    if (!phone) return;
+
+    try {
+      const res = await fetch("/v1/sanitize/ninth-digit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      ninthResOrig.textContent = data.input || phone;
+      ninthResNorm.textContent = data.normalized || phone;
+      ninthResMsg.textContent = data.message || "";
+    } catch (err) {
+      ninthResMsg.textContent = "Error executing 9th digit normalization.";
+    }
+  }
+
+  const patternInput = document.getElementById("pattern-input") as HTMLInputElement;
+  const patternBtn = document.getElementById("pattern-btn") as HTMLButtonElement;
+  const patternRiskBadge = document.getElementById("pattern-risk-badge") as HTMLElement;
+  const patternFlagsText = document.getElementById("pattern-flags-text") as HTMLElement;
+  const patternDescText = document.getElementById("pattern-desc-text") as HTMLElement;
+
+  async function executePatternCheck() {
+    const phone = patternInput.value.trim();
+    if (!phone) return;
+
+    try {
+      const res = await fetch("/v1/check/patterns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+
+      if (data.isSuspicious) {
+        patternRiskBadge.className = "badge badge-invalid";
+        patternRiskBadge.textContent = `High Risk (Score: ${data.score})`;
+      } else if (data.score > 0) {
+        patternRiskBadge.className = "badge badge-warning";
+        patternRiskBadge.textContent = `Medium Risk (Score: ${data.score})`;
+      } else {
+        patternRiskBadge.className = "badge badge-valid";
+        patternRiskBadge.textContent = `Clean Pattern (Score: 0)`;
+      }
+
+      patternFlagsText.textContent = (data.flags && data.flags.length > 0) ? data.flags.join(", ") : "None";
+      patternDescText.textContent = data.description || "";
+    } catch (err) {
+      patternDescText.textContent = "Error executing pattern check.";
+    }
+  }
+
+  ninthBtn.addEventListener("click", executeNinthFix);
+  patternBtn.addEventListener("click", executePatternCheck);
+
+  executeNinthFix();
+  executePatternCheck();
+</script>
+
+<style>
+  .section {
+    padding: 32px 0 48px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 960px) {
+    .tools-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .tool-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .tool-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tool-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .tool-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .tool-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .text-input {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.15s ease;
+  }
+
+  .text-input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    background: var(--bg-surface);
+  }
+
+  .tool-result-box {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .row-label {
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 80px;
+  }
+
+  .row-val {
+    color: var(--text-primary);
+    text-align: right;
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+</style>

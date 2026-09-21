@@ -1,0 +1,305 @@
+---
+---
+
+<section id="ddd-explorer" class="section">
+  <div class="section-header">
+    <span class="badge badge-neutral">Brazil Area Codes</span>
+    <h2 class="section-title">Brazilian DDD Intelligence</h2>
+    <p class="section-desc">Search and decode any of the 67 official Brazilian area codes, state mappings, and covered municipalities.</p>
+  </div>
+
+  <div class="glass-panel explorer-card">
+    <div class="search-bar">
+      <div class="input-wrapper">
+        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          id="ddd-search-input"
+          class="text-input"
+          placeholder="Search by DDD (e.g. 11, 48) or City (e.g. Curitiba, São Paulo)"
+          value="11"
+        />
+      </div>
+      <button type="button" id="ddd-search-btn" class="btn-primary">Search DDD</button>
+    </div>
+
+    <div class="quick-chips">
+      <span class="quick-label">Popular DDDs:</span>
+      <button type="button" class="ddd-chip" data-code="11">11 (São Paulo)</button>
+      <button type="button" class="ddd-chip" data-code="21">21 (Rio de Janeiro)</button>
+      <button type="button" class="ddd-chip" data-code="31">31 (Belo Horizonte)</button>
+      <button type="button" class="ddd-chip" data-code="41">41 (Curitiba)</button>
+      <button type="button" class="ddd-chip" data-code="48">48 (Florianópolis)</button>
+      <button type="button" class="ddd-chip" data-code="71">71 (Salvador)</button>
+      <button type="button" class="ddd-chip" data-code="85">85 (Fortaleza)</button>
+    </div>
+
+    <div class="results-grid" id="ddd-results-grid">
+    </div>
+  </div>
+</section>
+
+<script>
+  const dddInput = document.getElementById("ddd-search-input") as HTMLInputElement;
+  const dddBtn = document.getElementById("ddd-search-btn") as HTMLButtonElement;
+  const resultsGrid = document.getElementById("ddd-results-grid") as HTMLElement;
+
+  async function searchDDD(query: string) {
+    resultsGrid.innerHTML = `<div class="loading-text">Searching area codes...</div>`;
+    try {
+      const res = await fetch(`/v1/ddd?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      renderDDDResults(data.results || []);
+    } catch (err) {
+      resultsGrid.innerHTML = `<div class="error-text">Failed to fetch area code data.</div>`;
+    }
+  }
+
+  function renderDDDResults(items: any[]) {
+    if (items.length === 0) {
+      resultsGrid.innerHTML = `<div class="empty-text">No Brazilian area codes found matching your query.</div>`;
+      return;
+    }
+
+    resultsGrid.innerHTML = items.map((item: any) => `
+      <div class="ddd-item-card">
+        <div class="ddd-card-header">
+          <span class="ddd-code-badge">${item.code}</span>
+          <div class="ddd-state-info">
+            <span class="ddd-state-name">${item.stateName} (${item.state})</span>
+            <span class="ddd-region-name">${item.region} | ${item.timezone}</span>
+          </div>
+        </div>
+        <div class="ddd-cities-list">
+          <span class="cities-label">Major Municipalities Covered:</span>
+          <div class="cities-tags">
+            ${item.majorCities.map((c: string) => `<span class="city-tag">${c}</span>`).join("")}
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  dddBtn.addEventListener("click", () => searchDDD(dddInput.value.trim()));
+  dddInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      searchDDD(dddInput.value.trim());
+    }
+  });
+
+  document.querySelectorAll(".ddd-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const code = (chip as HTMLElement).dataset.code || "";
+      dddInput.value = code;
+      searchDDD(code);
+    });
+  });
+
+  searchDDD("11");
+</script>
+
+<style>
+  .section {
+    padding: 32px 0 48px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .explorer-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .search-bar {
+    display: flex;
+    gap: 12px;
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .text-input {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px 12px 42px;
+    font-size: 15px;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.15s ease;
+  }
+
+  .text-input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    background: var(--bg-surface);
+  }
+
+  .quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .quick-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .ddd-chip {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+  }
+
+  .ddd-chip:hover {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .ddd-item-card {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.15s ease;
+  }
+
+  .ddd-item-card:hover {
+    border-color: var(--brand-primary);
+  }
+
+  .ddd-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ddd-code-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--brand-primary);
+    color: #FFFFFF;
+    font-size: 18px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    border-radius: var(--radius-md);
+  }
+
+  .ddd-state-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ddd-state-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .ddd-region-name {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .ddd-cities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .cities-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .cities-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .city-tag {
+    font-size: 12px;
+    padding: 2px 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+  }
+
+  .loading-text, .empty-text, .error-text {
+    grid-column: 1 / -1;
+    padding: 32px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .error-text {
+    color: var(--color-danger);
+  }
+</style>

@@ -1,0 +1,308 @@
+---
+---
+
+<section id="ddi-explorer" class="section">
+  <div class="section-header">
+    <span class="badge badge-neutral">Global Calling Codes</span>
+    <h2 class="section-title">International DDI Calling Directory</h2>
+    <p class="section-desc">Look up international country calling codes, exit dialing prefixes, ISO country codes, and local emergency numbers.</p>
+  </div>
+
+  <div class="glass-panel explorer-card">
+    <div class="search-bar">
+      <div class="input-wrapper">
+        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <input
+          type="text"
+          id="ddi-search-input"
+          class="text-input"
+          placeholder="Search by DDI (e.g. 55, 1, 44) or Country (e.g. Singapore, Japan, France)"
+          value="55"
+        />
+      </div>
+      <button type="button" id="ddi-search-btn" class="btn-primary">Search DDI</button>
+    </div>
+
+    <div class="quick-chips">
+      <span class="quick-label">Common DDIs:</span>
+      <button type="button" class="ddi-chip" data-code="55">+55 (Brazil)</button>
+      <button type="button" class="ddi-chip" data-code="1">+1 (US / Canada)</button>
+      <button type="button" class="ddi-chip" data-code="44">+44 (United Kingdom)</button>
+      <button type="button" class="ddi-chip" data-code="351">+351 (Portugal)</button>
+      <button type="button" class="ddi-chip" data-code="65">+65 (Singapore)</button>
+      <button type="button" class="ddi-chip" data-code="81">+81 (Japan)</button>
+      <button type="button" class="ddi-chip" data-code="49">+49 (Germany)</button>
+    </div>
+
+    <div class="results-grid" id="ddi-results-grid">
+    </div>
+  </div>
+</section>
+
+<script>
+  const ddiInput = document.getElementById("ddi-search-input") as HTMLInputElement;
+  const ddiBtn = document.getElementById("ddi-search-btn") as HTMLButtonElement;
+  const resultsGrid = document.getElementById("ddi-results-grid") as HTMLElement;
+
+  async function searchDDI(query: string) {
+    resultsGrid.innerHTML = `<div class="loading-text">Searching global dialing codes...</div>`;
+    try {
+      const res = await fetch(`/v1/ddi?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      renderDDIResults(data.results || []);
+    } catch (err) {
+      resultsGrid.innerHTML = `<div class="error-text">Failed to fetch international code data.</div>`;
+    }
+  }
+
+  function renderDDIResults(items: any[]) {
+    if (items.length === 0) {
+      resultsGrid.innerHTML = `<div class="empty-text">No international calling codes found matching your query.</div>`;
+      return;
+    }
+
+    resultsGrid.innerHTML = items.map((item: any) => `
+      <div class="ddi-item-card">
+        <div class="ddi-card-header">
+          <span class="ddi-code-badge">+${item.callingCode}</span>
+          <div class="ddi-country-info">
+            <span class="ddi-country-name">${item.countryName}</span>
+            <span class="ddi-iso-text">ISO: ${item.iso2} / ${item.iso3} | Exit Prefix: ${item.iddPrefix}</span>
+          </div>
+        </div>
+        <div class="ddi-details-row">
+          <div class="ddi-meta-col">
+            <span class="meta-label">Primary Timezone</span>
+            <span class="meta-val">${item.timezoneHint}</span>
+          </div>
+          <div class="ddi-meta-col">
+            <span class="meta-label">Emergency Lines</span>
+            <span class="meta-val">${item.emergencyNumbers.join(", ")}</span>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  ddiBtn.addEventListener("click", () => searchDDI(ddiInput.value.trim()));
+  ddiInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      searchDDI(ddiInput.value.trim());
+    }
+  });
+
+  document.querySelectorAll(".ddi-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const code = (chip as HTMLElement).dataset.code || "";
+      ddiInput.value = code;
+      searchDDI(code);
+    });
+  });
+
+  searchDDI("55");
+</script>
+
+<style>
+  .section {
+    padding: 32px 0 48px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .explorer-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .search-bar {
+    display: flex;
+    gap: 12px;
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+  }
+
+  .input-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .text-input {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px 12px 42px;
+    font-size: 15px;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.15s ease;
+  }
+
+  .text-input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    background: var(--bg-surface);
+  }
+
+  .quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .quick-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .ddi-chip {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+  }
+
+  .ddi-chip:hover {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .ddi-item-card {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.15s ease;
+  }
+
+  .ddi-item-card:hover {
+    border-color: var(--brand-primary);
+  }
+
+  .ddi-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ddi-code-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    height: 44px;
+    padding: 0 8px;
+    background: var(--brand-primary);
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    border-radius: var(--radius-md);
+  }
+
+  .ddi-country-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ddi-country-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .ddi-iso-text {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .ddi-details-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .ddi-meta-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .meta-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .meta-val {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .loading-text, .empty-text, .error-text {
+    grid-column: 1 / -1;
+    padding: 32px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .error-text {
+    color: var(--color-danger);
+  }
+</style>

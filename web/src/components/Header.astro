@@ -19,6 +19,10 @@
     <nav class="nav-links">
       <a href="#single-validator" class="nav-link active">Single Tester</a>
       <a href="#batch-validator" class="nav-link">Batch Mode</a>
+      <a href="#ddd-explorer" class="nav-link">DDD Lookup</a>
+      <a href="#ddi-explorer" class="nav-link">DDI Lookup</a>
+      <a href="#whatsapp-builder" class="nav-link">WhatsApp Link</a>
+      <a href="#tools-section" class="nav-link">Quality Tools</a>
       <a href="#api-docs" class="nav-link">API Reference</a>
     </nav>
 
@@ -106,16 +110,17 @@
   .nav-links {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
   }
 
   .nav-link {
-    padding: 6px 14px;
+    padding: 6px 10px;
     border-radius: var(--radius-md);
     font-size: 13px;
     font-weight: 500;
     color: var(--text-secondary);
     transition: all 0.15s ease;
+    white-space: nowrap;
   }
 
   .nav-link:hover, .nav-link.active {
@@ -126,9 +131,10 @@
   .btn-sm {
     padding: 7px 14px;
     font-size: 13px;
+    white-space: nowrap;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1080px) {
     .nav-links {
       display: none;
     }

@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: LeadPhone Validator API
-  version: 1.0.0
-  description: High performance microservice in Go to parse, format, validate, and normalize international phone numbers with carrier, geocoding, and timezone metadata.
+  version: 1.1.0
+  description: High performance microservice in Go to validate phone numbers, decode DDD and DDI codes, normalize Brazilian 9th digits, detect suspicious patterns, and generate WhatsApp links.
 
 servers:
   - url: http://localhost:3007
@@ -33,34 +33,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
 
-  /validate:
-    post:
-      summary: Validate and format single phone number
-      description: Parses single phone number, infers international dialing codes, extracts carrier and geocoding metadata, and generates formatted representations including WhatsApp click to chat links.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ValidateRequest"
-      responses:
-        "200":
-          description: Validation result
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ValidationResponse"
-        "400":
-          description: Invalid request payload
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
   /v1/validate:
     post:
-      summary: Validate and format single phone number (v1 alias)
-      description: Versioned endpoint for single phone validation.
+      summary: Validate and format single phone number
+      description: Parses single phone number, extracts carrier and geocoding metadata, and generates formatted representations.
       requestBody:
         required: true
         content:
@@ -74,14 +50,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ValidationResponse"
-        "400":
-          description: Invalid request payload
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
-  /validate/batch:
+  /v1/validate/batch:
     post:
       summary: Validate multiple phone numbers in batch
       description: Concurrently validates an array of phone numbers using worker goroutines.
@@ -98,36 +68,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BatchValidationResponse"
-        "400":
-          description: Invalid request payload
+
+  /v1/ddd:
+    get:
+      summary: Brazilian Area Code (DDD) Lookup
+      description: Look up Brazilian area code details, state, region, timezone, and major covered municipalities.
+      parameters:
+        - name: q
+          in: query
+          description: Area code (e.g. 11, 48) or municipality name (e.g. Curitiba)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: DDD lookup results
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/DDDResponse"
 
-  /v1/validate/batch:
+  /v1/ddi:
+    get:
+      summary: International Calling Code (DDI) Lookup
+      description: Look up international country calling codes, ISO codes, exit prefixes, and emergency numbers.
+      parameters:
+        - name: q
+          in: query
+          description: Calling code (e.g. 55, 65) or country name (e.g. Singapore)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: DDI lookup results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DDIResponse"
+
+  /v1/sanitize/ninth-digit:
     post:
-      summary: Validate multiple phone numbers in batch (v1 alias)
-      description: Versioned endpoint for batch phone validation.
+      summary: Brazilian 9th Digit Normalizer
+      description: Automatically converts legacy 8-digit mobile numbers to 9 digits while preserving 8-digit landlines.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BatchValidateRequest"
+              $ref: "#/components/schemas/NinthDigitRequest"
       responses:
         "200":
-          description: Batch validation results
+          description: Ninth digit normalization result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BatchValidationResponse"
-        "400":
-          description: Invalid request payload
+                $ref: "#/components/schemas/NinthDigitResponse"
+
+  /v1/whatsapp/link:
+    post:
+      summary: WhatsApp Link Builder
+      description: Generates clean wa.me direct links with optional URL-encoded greeting message templates.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppLinkRequest"
+      responses:
+        "200":
+          description: WhatsApp link result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/WhatsAppLinkResponse"
+
+  /v1/check/patterns:
+    post:
+      summary: Suspicious Pattern and Dummy Detector
+      description: Inspects phone numbers for repeated digits, sequential ranges, and fictitious test numbers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatternCheckRequest"
+      responses:
+        "200":
+          description: Pattern analysis report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatternCheckResponse"
 
 components:
   schemas:
@@ -139,15 +169,9 @@ components:
         phone:
           type: string
           example: "+55 (11) 98765-4321"
-          description: Phone number in raw or formatted notation.
         country:
           type: string
           example: "BR"
-          description: Optional ISO-2 country code hint.
-        raw:
-          type: string
-          example: "11987654321"
-          description: Optional fallback raw number field.
 
     BatchValidateRequest:
       type: object
@@ -159,143 +183,172 @@ components:
           items:
             $ref: "#/components/schemas/ValidateRequest"
 
-    InputData:
-      type: object
-      properties:
-        raw:
-          type: string
-          example: "+55 (11) 98765-4321"
-        country:
-          type: string
-          nullable: true
-          example: "BR"
-
-    ParsedData:
-      type: object
-      properties:
-        isValid:
-          type: boolean
-          example: true
-        isPossible:
-          type: boolean
-          example: true
-        type:
-          type: string
-          nullable: true
-          example: "MOBILE"
-        region:
-          type: string
-          nullable: true
-          example: "BR"
-        countryCode:
-          type: integer
-          nullable: true
-          example: 55
-        nationalNumber:
-          type: integer
-          nullable: true
-          example: 11987654321
-        needsDDD:
-          type: boolean
-          nullable: true
-          example: false
-        needsCountry:
-          type: boolean
-          nullable: true
-          example: false
-        reason:
-          type: string
-          nullable: true
-          example: ""
-
-    MetadataData:
-      type: object
-      nullable: true
-      properties:
-        carrier:
-          type: string
-          nullable: true
-          example: "TIM"
-        location:
-          type: string
-          nullable: true
-          example: "São Paulo"
-        timezones:
-          type: array
-          items:
-            type: string
-          example: ["America/Sao_Paulo"]
-
-    FormattedData:
-      type: object
-      properties:
-        e164:
-          type: string
-          example: "+5511987654321"
-        international:
-          type: string
-          example: "+55 11 98765-4321"
-        national:
-          type: string
-          example: "(11) 98765-4321"
-        rfc3966:
-          type: string
-          example: "tel:+55-11-98765-4321"
-        whatsapp:
-          type: string
-          example: "5511987654321"
-        whatsappUrl:
-          type: string
-          example: "https://wa.me/5511987654321"
-
     ValidationResponse:
       type: object
       properties:
         input:
-          $ref: "#/components/schemas/InputData"
+          type: object
         parsed:
-          $ref: "#/components/schemas/ParsedData"
+          type: object
         metadata:
-          $ref: "#/components/schemas/MetadataData"
+          type: object
         formatted:
-          $ref: "#/components/schemas/FormattedData"
+          type: object
 
     BatchValidationResponse:
       type: object
       properties:
         total:
           type: integer
-          example: 3
         valid:
           type: integer
-          example: 2
         invalid:
           type: integer
-          example: 1
         results:
           type: array
           items:
             $ref: "#/components/schemas/ValidationResponse"
+
+    DDDResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        found:
+          type: boolean
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              state:
+                type: string
+              stateName:
+                type: string
+              region:
+                type: string
+              majorCities:
+                type: array
+                items:
+                  type: string
+              timezone:
+                type: string
+
+    DDIResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        found:
+          type: boolean
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              callingCode:
+                type: string
+              countryName:
+                type: string
+              iso2:
+                type: string
+              iso3:
+                type: string
+              iddPrefix:
+                type: string
+              emergencyNumbers:
+                type: array
+                items:
+                  type: string
+              timezoneHint:
+                type: string
+
+    NinthDigitRequest:
+      type: object
+      required:
+        - phone
+      properties:
+        phone:
+          type: string
+          example: "1187654321"
+
+    NinthDigitResponse:
+      type: object
+      properties:
+        input:
+          type: string
+        normalized:
+          type: string
+        changed:
+          type: boolean
+        isMobile:
+          type: boolean
+        isLandline:
+          type: boolean
+        isValid:
+          type: boolean
+        message:
+          type: string
+
+    WhatsAppLinkRequest:
+      type: object
+      required:
+        - phone
+      properties:
+        phone:
+          type: string
+          example: "+55 11 98765-4321"
+        message:
+          type: string
+          example: "Hello, scheduling demo"
+
+    WhatsAppLinkResponse:
+      type: object
+      properties:
+        phone:
+          type: string
+        e164:
+          type: string
+        message:
+          type: string
+        url:
+          type: string
+        isValid:
+          type: boolean
+
+    PatternCheckRequest:
+      type: object
+      required:
+        - phone
+      properties:
+        phone:
+          type: string
+          example: "11999999999"
+
+    PatternCheckResponse:
+      type: object
+      properties:
+        phone:
+          type: string
+        isSuspicious:
+          type: boolean
+        flags:
+          type: array
+          items:
+            type: string
+        score:
+          type: integer
+        description:
+          type: string
 
     HealthResponse:
       type: object
       properties:
         status:
           type: string
-          example: "ok"
         service:
           type: string
-          example: "LeadPhone Validator"
         version:
           type: string
-          example: "1.0.0"
-
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-          example: "Invalid JSON payload"
-        message:
-          type: string
-          example: "unexpected EOF"

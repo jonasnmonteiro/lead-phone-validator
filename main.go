@@ -43,6 +43,25 @@ func main() {
 	mux.HandleFunc("/validate/batch", handlers.HandleBatchValidate)
 	mux.HandleFunc("/v1/validate/batch", handlers.HandleBatchValidate)
 
+	mux.HandleFunc("/ddd", handlers.HandleDDD)
+	mux.HandleFunc("/v1/ddd", handlers.HandleDDD)
+	mux.HandleFunc("/ddd/", handlers.HandleDDD)
+	mux.HandleFunc("/v1/ddd/", handlers.HandleDDD)
+
+	mux.HandleFunc("/ddi", handlers.HandleDDI)
+	mux.HandleFunc("/v1/ddi", handlers.HandleDDI)
+	mux.HandleFunc("/ddi/", handlers.HandleDDI)
+	mux.HandleFunc("/v1/ddi/", handlers.HandleDDI)
+
+	mux.HandleFunc("/sanitize/ninth-digit", handlers.HandleNinthDigit)
+	mux.HandleFunc("/v1/sanitize/ninth-digit", handlers.HandleNinthDigit)
+
+	mux.HandleFunc("/whatsapp/link", handlers.HandleWhatsAppLink)
+	mux.HandleFunc("/v1/whatsapp/link", handlers.HandleWhatsAppLink)
+
+	mux.HandleFunc("/check/patterns", handlers.HandlePatternCheck)
+	mux.HandleFunc("/v1/check/patterns", handlers.HandlePatternCheck)
+
 	mux.HandleFunc("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "openapi.yaml")
 	})

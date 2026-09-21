@@ -1,0 +1,305 @@
+---
+---
+
+<section id="whatsapp-builder" class="section">
+  <div class="section-header">
+    <span class="badge badge-neutral">Lead Conversion</span>
+    <h2 class="section-title">WhatsApp Click-to-Chat Link Generator</h2>
+    <p class="section-desc">Create pre-formatted WhatsApp chat links with custom URL-encoded greeting templates for ads, bios, and buttons.</p>
+  </div>
+
+  <div class="glass-panel builder-card">
+    <div class="builder-form">
+      <div class="form-group">
+        <label for="wa-phone-input" class="form-label">Recipient Phone Number</label>
+        <input
+          type="text"
+          id="wa-phone-input"
+          class="text-input"
+          placeholder="+55 (11) 98765-4321"
+          value="+55 (11) 98765-4321"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="wa-msg-input" class="form-label">Pre-filled Message Template (Optional)</label>
+        <textarea
+          id="wa-msg-input"
+          class="text-textarea"
+          rows="3"
+          placeholder="Hello! I saw your service and would like to schedule a demonstration."
+        >Hello! I saw your service and would like to schedule a demonstration.</textarea>
+      </div>
+
+      <div class="presets-row">
+        <span class="presets-label">Message Presets:</span>
+        <button type="button" class="preset-chip" data-msg="Hello! I would like more information about your pricing.">Pricing Inquiry</button>
+        <button type="button" class="preset-chip" data-msg="Hi, I need support with my active account.">Customer Support</button>
+        <button type="button" class="preset-chip" data-msg="Hello, I want to confirm my scheduled appointment.">Appointment Booking</button>
+      </div>
+    </div>
+
+    <div class="builder-output">
+      <div class="output-header">
+        <span class="output-label">Generated WhatsApp Direct Link</span>
+        <span id="wa-valid-badge" class="badge badge-valid">Valid E.164</span>
+      </div>
+
+      <div class="link-display-box">
+        <span id="generated-wa-url" class="generated-url">https://wa.me/5511987654321?text=Hello</span>
+      </div>
+
+      <div class="builder-actions">
+        <a id="test-wa-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.97.53 1.771.815 2.796.815 3.18 0 5.767-2.587 5.768-5.766.001-3.181-2.585-5.766-5.768-5.766zm9.969 5.766c0 5.518-4.482 10-10 10-1.748 0-3.385-.45-4.819-1.238l-5.181 1.358 1.382-5.048c-.867-1.482-1.382-3.21-1.382-5.072 0-5.518 4.482-10 10-10 5.518 0 10 4.482 10 10z"/>
+          </svg>
+          Test in WhatsApp
+        </a>
+        <button type="button" id="copy-wa-link-btn" class="btn-secondary">
+          Copy URL
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const waPhoneInput = document.getElementById("wa-phone-input") as HTMLInputElement;
+  const waMsgInput = document.getElementById("wa-msg-input") as HTMLTextAreaElement;
+  const generatedWaUrl = document.getElementById("generated-wa-url") as HTMLElement;
+  const testWaBtn = document.getElementById("test-wa-btn") as HTMLAnchorElement;
+  const copyWaLinkBtn = document.getElementById("copy-wa-link-btn") as HTMLButtonElement;
+  const waValidBadge = document.getElementById("wa-valid-badge") as HTMLElement;
+
+  async function updateWhatsAppLink() {
+    const phone = waPhoneInput.value.trim();
+    const message = waMsgInput.value.trim();
+
+    if (!phone) {
+      generatedWaUrl.textContent = "Please enter a phone number";
+      testWaBtn.href = "#";
+      return;
+    }
+
+    try {
+      const res = await fetch("/v1/whatsapp/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, message })
+      });
+      const data = await res.json();
+
+      generatedWaUrl.textContent = data.url || "";
+      testWaBtn.href = data.url || "#";
+
+      if (data.isValid) {
+        waValidBadge.className = "badge badge-valid";
+        waValidBadge.textContent = "Valid E.164";
+      } else {
+        waValidBadge.className = "badge badge-warning";
+        waValidBadge.textContent = "Unverified Format";
+      }
+    } catch (err) {
+      const cleanDigits = phone.replace(/\D/g, "");
+      const fallbackUrl = `https://wa.me/${cleanDigits}${message ? "?text=" + encodeURIComponent(message) : ""}`;
+      generatedWaUrl.textContent = fallbackUrl;
+      testWaBtn.href = fallbackUrl;
+    }
+  }
+
+  waPhoneInput.addEventListener("input", updateWhatsAppLink);
+  waMsgInput.addEventListener("input", updateWhatsAppLink);
+
+  document.querySelectorAll(".preset-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      waMsgInput.value = (chip as HTMLElement).dataset.msg || "";
+      updateWhatsAppLink();
+    });
+  });
+
+  copyWaLinkBtn.addEventListener("click", () => {
+    const url = generatedWaUrl.textContent || "";
+    if (!url || url.startsWith("Please")) return;
+    navigator.clipboard.writeText(url);
+    const original = copyWaLinkBtn.textContent;
+    copyWaLinkBtn.textContent = "Copied!";
+    setTimeout(() => {
+      copyWaLinkBtn.textContent = original;
+    }, 1500);
+  });
+
+  updateWhatsAppLink();
+</script>
+
+<style>
+  .section {
+    padding: 32px 0 48px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 12px 0 8px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .builder-card {
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 960px) {
+    .builder-card {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .builder-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .text-input {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.15s ease;
+  }
+
+  .text-input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    background: var(--bg-surface);
+  }
+
+  .text-textarea {
+    width: 100%;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    resize: vertical;
+    transition: all 0.15s ease;
+  }
+
+  .text-textarea:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    background: var(--bg-surface);
+  }
+
+  .presets-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .presets-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    width: 100%;
+  }
+
+  .preset-chip {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+  }
+
+  .preset-chip:hover {
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
+  }
+
+  .builder-output {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .output-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+  }
+
+  .link-display-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    word-break: break-all;
+  }
+
+  .generated-url {
+    font-size: 14px;
+    font-family: var(--font-mono);
+    color: var(--brand-primary);
+  }
+
+  .builder-actions {
+    display: flex;
+    gap: 10px;
+  }
+</style>

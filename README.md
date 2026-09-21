@@ -1,22 +1,25 @@
 # LeadPhone Validator
 
-A high-performance phone number validation, normalization, and telecom intelligence microservice written in Go.
+A high-performance phone number validation, telecom intelligence, and lead normalization microservice written in Go.
 
-LeadPhone Validator parses, sanitizes, and normalizes international telephone numbers using Google libphonenumber metadata. It is built for marketing automations, CRM pipelines, lead capture forms, and chatbot routing to prevent lead loss and format numbers before outbound communication.
+LeadPhone Validator parses, sanitizes, and normalizes international telephone numbers using Google libphonenumber metadata. It provides Brazilian DDD area code intelligence, global DDI calling code directories, 9th digit normalization, synthetic pattern detection, and WhatsApp click-to-chat generation for marketing automation bots, CRM funnels, and customer communication workflows.
 
 ## Core Capabilities
 
 * Sub-millisecond phone parsing and validity checking for all global territories.
+* Complete Brazilian DDD intelligence covering all 67 official area codes with municipal reverse search.
+* Global DDI calling code directory with ISO codes, IDD exit prefixes, and emergency numbers.
+* Brazilian 9th digit auto-fixer converting legacy 8-digit mobiles while preserving landlines.
+* Suspicious pattern and dummy lead detector flagging repeated and sequential digits.
+* WhatsApp link builder supporting custom URL-encoded pre-filled greeting templates.
 * Offline carrier name identification, geocoding location resolution, and timezone extraction.
-* Intelligent dialing code recovery for international numbers missing the leading plus prefix.
-* Area code detection and validation for domestic and international formats.
-* Out-of-the-box WhatsApp normalization providing raw digits and direct click to chat links.
 * High-throughput concurrent batch processing via native Go worker routines.
 * Minimal resource footprint compiling to a standalone static binary in Alpine Linux.
 
 ## Requirements
 
 * Go 1.22 or higher (for local builds)
+* Node.js 20 or higher (for Astro frontend builds)
 * Docker (optional, for containerized deployments)
 
 ## Quick Start
@@ -27,16 +30,12 @@ LeadPhone Validator parses, sanitizes, and normalizes international telephone nu
 make run
 ```
 
-Or using the Go toolchain directly:
+The server starts by default on port 3007.
+
+To run the interactive Astro frontend with hot-reload in development:
 
 ```bash
-go run .
-```
-
-The server starts by default on port 3007. To specify a custom port:
-
-```bash
-PORT=8080 go run .
+make web-dev
 ```
 
 ### Running Tests
@@ -60,27 +59,18 @@ make docker-build
 make docker-run
 ```
 
-Or manually:
-
-```bash
-docker build -t leadphone-validator .
-docker run -p 3007:3007 leadphone-validator
-```
-
 ## API Documentation
 
 ### 1. Health Check
 
 * Method: `GET`
-* Paths: `/`, `/health`
-
-Example Response:
+* Paths: `/`, `/health`, `/v1/health`
 
 ```json
 {
   "status": "ok",
   "service": "LeadPhone Validator",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
 ```
 
@@ -88,16 +78,8 @@ Example Response:
 
 * Method: `POST`
 * Paths: `/validate`, `/v1/validate`
-* Headers: `Content-Type: application/json`
 
-#### Request Payload
-
-| Field | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `phone` | `string` | Yes | Phone number in local or international format. |
-| `country` | `string` | No | ISO-2 country code hint (e.g. BR, US, SG). |
-
-#### Request Example
+Request Payload:
 
 ```json
 {
@@ -105,68 +87,12 @@ Example Response:
 }
 ```
 
-#### Valid Number Response
-
-```json
-{
-  "input": {
-    "raw": "+55 (11) 98765-4321",
-    "country": null
-  },
-  "parsed": {
-    "isValid": true,
-    "isPossible": true,
-    "type": "MOBILE",
-    "region": "BR",
-    "countryCode": 55,
-    "nationalNumber": 11987654321
-  },
-  "metadata": {
-    "carrier": "TIM",
-    "location": "São Paulo",
-    "timezones": [
-      "America/Sao_Paulo"
-    ]
-  },
-  "formatted": {
-    "e164": "+5511987654321",
-    "international": "+55 11 98765-4321",
-    "national": "(11) 98765-4321",
-    "rfc3966": "tel:+55-11-98765-4321",
-    "whatsapp": "5511987654321",
-    "whatsappUrl": "https://wa.me/5511987654321"
-  }
-}
-```
-
-#### Missing Area Code Response
-
-```json
-{
-  "input": {
-    "raw": "987654321",
-    "country": null
-  },
-  "parsed": {
-    "isValid": false,
-    "isPossible": false,
-    "type": null,
-    "region": null,
-    "needsDDD": true,
-    "reason": "Brazilian number without area code."
-  },
-  "metadata": null,
-  "formatted": {}
-}
-```
-
-### 3. Batch Validation
+### 3. Batch Lead Validation
 
 * Method: `POST`
 * Paths: `/validate/batch`, `/v1/validate/batch`
-* Headers: `Content-Type: application/json`
 
-#### Request Example
+Request Payload:
 
 ```json
 {
@@ -178,111 +104,129 @@ Example Response:
 }
 ```
 
-#### Response Example
+### 4. Brazilian DDD Area Code Lookup
+
+* Method: `GET`
+* Paths: `/v1/ddd?q=11` or `/v1/ddd?q=curitiba`
+
+Example Response:
 
 ```json
 {
-  "total": 3,
-  "valid": 2,
-  "invalid": 1,
+  "query": "11",
+  "found": true,
   "results": [
     {
-      "input": { "raw": "6581234567", "country": null },
-      "parsed": {
-        "isValid": true,
-        "isPossible": true,
-        "type": "MOBILE",
-        "region": "SG",
-        "countryCode": 65,
-        "nationalNumber": 81234567
-      },
-      "metadata": {
-        "carrier": "SingTel",
-        "location": "Singapore",
-        "timezones": ["Asia/Singapore"]
-      },
-      "formatted": {
-        "e164": "+6581234567",
-        "international": "+65 8123 4567",
-        "national": "8123 4567",
-        "rfc3966": "tel:+65-8123-4567",
-        "whatsapp": "6581234567",
-        "whatsappUrl": "https://wa.me/6581234567"
-      }
-    },
-    {
-      "input": { "raw": "+55 11 98765-4321", "country": null },
-      "parsed": {
-        "isValid": true,
-        "isPossible": true,
-        "type": "MOBILE",
-        "region": "BR",
-        "countryCode": 55,
-        "nationalNumber": 11987654321
-      },
-      "metadata": {
-        "carrier": "TIM",
-        "location": "São Paulo",
-        "timezones": ["America/Sao_Paulo"]
-      },
-      "formatted": {
-        "e164": "+5511987654321",
-        "international": "+55 11 98765-4321",
-        "national": "(11) 98765-4321",
-        "rfc3966": "tel:+55-11-98765-4321",
-        "whatsapp": "5511987654321",
-        "whatsappUrl": "https://wa.me/5511987654321"
-      }
-    },
-    {
-      "input": { "raw": "987654321", "country": null },
-      "parsed": {
-        "isValid": false,
-        "isPossible": false,
-        "type": null,
-        "region": null,
-        "needsDDD": true,
-        "reason": "Brazilian number without area code."
-      },
-      "metadata": null,
-      "formatted": {}
+      "code": "11",
+      "state": "SP",
+      "stateName": "São Paulo",
+      "region": "Sudeste",
+      "majorCities": ["São Paulo", "Guarulhos", "Santo André", "Osasco"],
+      "timezone": "America/Sao_Paulo"
     }
   ]
 }
 ```
 
-## Integration Examples
+### 5. International DDI Directory
 
-### cURL
+* Method: `GET`
+* Paths: `/v1/ddi?q=55` or `/v1/ddi?q=singapore`
 
-```bash
-curl -X POST "http://localhost:3007/validate" \
-  -H "Content-Type: application/json" \
-  -d '{"phone": "+5511987654321"}'
+Example Response:
+
+```json
+{
+  "query": "55",
+  "found": true,
+  "results": [
+    {
+      "callingCode": "55",
+      "countryName": "Brazil",
+      "iso2": "BR",
+      "iso3": "BRA",
+      "iddPrefix": "00",
+      "emergencyNumbers": ["190", "192", "193"],
+      "timezoneHint": "America/Sao_Paulo"
+    }
+  ]
+}
 ```
 
-### Python
+### 6. Brazilian 9th Digit Normalizer
 
-```python
-import requests
+* Method: `POST`
+* Paths: `/v1/sanitize/ninth-digit`
 
-response = requests.post(
-    "http://localhost:3007/validate",
-    json={"phone": "+5511987654321"}
-)
-data = response.json()
-if data["parsed"]["isValid"]:
-    print("WhatsApp Link:", data["formatted"]["whatsappUrl"])
+Request Payload:
+
+```json
+{
+  "phone": "1187654321"
+}
 ```
 
-### Node.js / TypeScript
+Response:
 
-```typescript
-const res = await fetch("http://localhost:3007/validate", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ phone: "+5511987654321" }),
-});
-const data = await res.json();
-console.log(data);
+```json
+{
+  "input": "1187654321",
+  "normalized": "11987654321",
+  "changed": true,
+  "isMobile": true,
+  "isLandline": false,
+  "isValid": true,
+  "message": "Inserted ninth digit 9 after area code."
+}
+```
+
+### 7. WhatsApp Direct Link Builder
+
+* Method: `POST`
+* Paths: `/v1/whatsapp/link`
+
+Request Payload:
+
+```json
+{
+  "phone": "+55 11 98765-4321",
+  "message": "Hello, scheduling a product demo"
+}
+```
+
+Response:
+
+```json
+{
+  "phone": "+55 11 98765-4321",
+  "e164": "+5511987654321",
+  "message": "Hello, scheduling a product demo",
+  "url": "https://wa.me/5511987654321?text=Hello%2C+scheduling+a+product+demo",
+  "isValid": true
+}
+```
+
+### 8. Suspicious Pattern Detector
+
+* Method: `POST`
+* Paths: `/v1/check/patterns`
+
+Request Payload:
+
+```json
+{
+  "phone": "11999999999"
+}
+```
+
+Response:
+
+```json
+{
+  "phone": "11999999999",
+  "isSuspicious": false,
+  "flags": ["REPEATED_TRAIL_DIGITS"],
+  "score": 30,
+  "description": "Minor pattern flags detected. Verify line activity."
+}
 ```
